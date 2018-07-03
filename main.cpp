@@ -22,8 +22,6 @@ void FSCPU(const cv::Mat& in, cv::Mat& out)
 	int width = in.cols;
 	int heigth = in.rows;
 
-	//	cv::Mat error(in.rows, in.cols, CV_8UC1);
-
 	int* error = new int[width*heigth];
 
 
@@ -82,14 +80,14 @@ int main(void)
 {
 	cv::Mat in;
 
-	in = imread("C:\\Users\\Kuba\\Desktop\\cuda\\Cudownie\\helga.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	in = imread("C:\\Users\\Kuba\\Desktop\\cuda\\Cudownie\\vw.jpg", CV_LOAD_IMAGE_GRAYSCALE);
 
 	cv::Mat out(in.rows, in.cols, CV_8UC1);
 
 	FloydSteinbergWrapper(in, out);
 
 
-	//FSCPU(in, out);
+//	FSCPU(in, out);
 
 
 

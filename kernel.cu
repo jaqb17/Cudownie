@@ -2,10 +2,11 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <opencv2/core/mat.hpp>
+#include <iostream>
 
 
 __global__
-void FloydSteinberg(unsigned char* input, unsigned char* output, int* error, unsigned int rows, unsigned int cols)
+void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, unsigned int rows, unsigned int cols)
 {
 	int x = threadIdx.x;
 	int y = blockIdx.x * blockDim.x;
@@ -48,7 +49,7 @@ void FloydSteinberg(unsigned char* input, unsigned char* output, int* error, uns
 }
 
 __global__
-void FloydSteinbergST(unsigned char* input, unsigned char* output, int* error, unsigned int rows, unsigned int cols)
+void FloydSteinbergST(unsigned char* input, unsigned char* output, char* error, unsigned int rows, unsigned int cols)
 {
 	const int p = 128;
 	const int black = 0;
@@ -102,11 +103,11 @@ void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out)
 {
 
 	unsigned char *input_prt, *output_ptr;
-	int *error_ptr;
+	char *error_ptr;
 
 	cudaMalloc<unsigned char>(&input_prt, in.rows*in.cols);
 	cudaMalloc<unsigned char>(&output_ptr, out.rows*out.cols);
-	cudaMalloc<int>(&error_ptr, in.cols*in.rows);
+	cudaMalloc<char>(&error_ptr, in.cols*in.rows);
 
 	cudaMemcpy(input_prt, in.ptr(), in.rows*in.cols, cudaMemcpyHostToDevice);
 
@@ -115,7 +116,7 @@ void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out)
 	FloydSteinbergST << <1, 1 >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
 
 	cudaDeviceSynchronize();
-
+	std::cout << "policzone";
 	cudaMemcpy(out.ptr(), output_ptr, out.cols*out.rows, cudaMemcpyDeviceToHost);
 
 	// Free memory
