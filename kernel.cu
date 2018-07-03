@@ -101,12 +101,6 @@ void FloydSteinbergST(unsigned char* input, unsigned char* output, int* error, u
 void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out)
 {
 
-	//	int blockSize = 256;
-	//	int numBlocks = (N + blockSize - 1) / blockSize;
-
-	const int BLOCKDIM = 256;
-	// Allocate Unified Memory – accessible from CPU or GPU
-
 	unsigned char *input_prt, *output_ptr;
 	int *error_ptr;
 
