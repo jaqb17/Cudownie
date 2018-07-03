@@ -1,5 +1,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 
 #include "cuda_runtime.h"
@@ -9,31 +10,94 @@
 using namespace cv;
 
 
-extern void add_wrapper(int n, float *x, float *y);
+extern void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out);
+
+
+void FSCPU(const cv::Mat& in, cv::Mat& out)
+{
+	const int p = 128;
+	const int black = 0;
+	const int white = 255;
+
+	int width = in.cols;
+	int heigth = in.rows;
+
+	//	cv::Mat error(in.rows, in.cols, CV_8UC1);
+
+	int* error = new int[width*heigth];
+
+
+
+	for (int y = 0; y < heigth; y++)
+	{
+		for (int x = 0; x < width; x++)
+		{
+			error[y*width + x] = 0;
+		}
+	}
+
+
+
+	for (int y = 0; y < in.rows; y++)
+	{
+		for (int x = 0; x < in.cols; x++)
+		{
+			int e = 0;
+			if (in.data[y*in.cols + x] + error[y*width + x] < p)
+			{
+				out.data[y*out.cols + x] = black;
+				e = in.data[y*in.cols + x] + error[y*width + x];
+			}
+			else
+			{
+				out.data[y*out.cols + x] = white;
+				e = in.data[y*in.cols + x] + error[y*width + x] - 255;
+			}
+
+			if (x < width - 1)
+			{
+				error[y*width + x + 1] += e * 7 / 16;  //prawa
+
+				if (y < heigth - 1)
+				{
+					error[(y + 1)*width + x + 1] += e * 1 / 16; //prawa dol
+				}
+			}
+
+			if (y < heigth - 1)
+			{
+				error[(y + 1)*width + x] += e * 5 / 16;
+
+				if (x > 0)
+				{
+					error[(y + 1)*width + x - 1] += e * 3 / 16;
+				}
+			}
+		}
+	}
+	delete[]error;
+}
 
 int main(void)
 {
 	cv::Mat in;
 
-	in = imread("C:\\Users\\Kuba\\Desktop\\cuda\\Cudownie\\Pepe.jpg", CV_LOAD_IMAGE_COLOR);
-	int N = 1 << 20;
-	float *x, *y;
-	cudaMallocManaged(&x, N * sizeof(float));
-	cudaMallocManaged(&y, N * sizeof(float));
-	for (int i = 0; i < N; i++) {
-		x[i] = 1.0f;
-		y[i] = 2.0f;
-	}
+	in = imread("C:\\Users\\Kuba\\Desktop\\cuda\\Cudownie\\helga.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+
+	cv::Mat out(in.rows, in.cols, CV_8UC1);
+
+	FloydSteinbergWrapper(in, out);
 
 
-	add_wrapper(N, x, y);
-	
+	//FSCPU(in, out);
 
 
 
+	namedWindow("Input", WINDOW_AUTOSIZE);// Create a window for display.
+	imshow("Input", in);                   // Show our image inside it.
 
-	namedWindow("Display window", WINDOW_AUTOSIZE);// Create a window for display.
-	imshow("Display window", in);                   // Show our image inside it.
+	namedWindow("Output", WINDOW_AUTOSIZE);// Create a window for display.
+	imshow("Output", out);                   // Show our image inside it.
 
 	waitKey(0);
 
