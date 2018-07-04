@@ -4,6 +4,8 @@
 #include <opencv2/core/mat.hpp>
 #include <iostream>
 
+#define SIZE 16
+#define POSITION (((blockIdx.x*SIZE+y)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x
 
 __global__
 void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, unsigned int rows, unsigned int cols)
@@ -16,36 +18,54 @@ void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, un
 
 	int e = 0;
 
-	if (input[y + x] + error[y + x] < p)
+	for (int y = 0; y < SIZE; y++)
 	{
-		output[y + x] = black;
-		e = input[y + x] + error[y + x];
-	}
-	else
-	{
-		output[y + x] = white;
-		e = input[y + x] + error[y + x] - white;
-	}
-
-	if (x < blockDim.x - 1)
-	{
-		error[y + x + 1] += e * 7 / 16;
-
-		if (blockIdx.x < rows - 1)
+		for (int x = 0; x < SIZE; x++)
 		{
-			error[(blockIdx.x + 1)*blockDim.x + x + 1] += e * 1 / 16;
+			if (input[POSITION] + error[POSITION] < p)
+			{
+				output[POSITION] = black;
+				e = input[POSITION] + error[POSITION];
+			}
+			else
+			{
+				output[POSITION] = white;
+				e = input[POSITION] + error[POSITION] - white;
+			}
+
+
+
+
+			if (x < SIZE - 1)
+			{
+				error[POSITION + 1] += e * 7 / 16;
+
+				if (y < SIZE - 1)
+				{
+					error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x + 1] += e * 1 / 16;
+				
+				}
+			}
+
+			if (y < SIZE - 1)
+			{
+				error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x] += e * 5 / 16;
+
+				if (x > 0)
+				{
+					error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x - 1] += e * 3 / 16;
+				}
+			}
+
+
 		}
 	}
 
-	if (blockIdx.x < cols - 1)
-	{
-		error[(blockIdx.x + 1)*blockDim.x + x] += e * 5 / 16;
 
-		if (x > 0)
-		{
-			error[(blockIdx.x + 1)*blockDim.x + x - 1] += e * 3 / 16;
-		}
-	}
+
+
+
+
 }
 
 __global__
@@ -59,12 +79,12 @@ void FloydSteinbergST(unsigned char* input, unsigned char* output, char* error, 
 	int e = 0;
 
 
-	for (int y=0;y<rows;y++)
+	for (int y = 0; y < rows; y++)
 	{
-		for (int x=0;x<cols;x++)
+		for (int x = 0; x < cols; x++)
 		{
 			int e = 0;
-			if(input[y*cols+x]+error[y*width+x]<p)
+			if (input[y*cols + x] + error[y*width + x] < p)
 			{
 				output[y*cols + x] = black;
 				e = input[y*cols + x] + error[y*width + x];
@@ -112,8 +132,12 @@ void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out)
 	cudaMemcpy(input_prt, in.ptr(), in.rows*in.cols, cudaMemcpyHostToDevice);
 
 
+	int blockSize = in.cols / SIZE;
+
+
+
 	//FloydSteinberg << <in.rows, in.cols >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
-	FloydSteinbergST << <1, 1 >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
+	FloydSteinbergST << <blockSize, blockSize >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
 
 	cudaDeviceSynchronize();
 	std::cout << "policzone";
