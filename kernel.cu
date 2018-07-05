@@ -10,8 +10,7 @@
 __global__
 void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, unsigned int rows, unsigned int cols)
 {
-	int x = threadIdx.x;
-	int y = blockIdx.x * blockDim.x;
+
 	const int p = 128;
 	const int black = 0;
 	const int white = 255;
@@ -40,10 +39,11 @@ void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, un
 			{
 				error[POSITION + 1] += e * 7 / 16;
 
+
 				if (y < SIZE - 1)
 				{
 					error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x + 1] += e * 1 / 16;
-				
+
 				}
 			}
 
@@ -51,9 +51,9 @@ void FloydSteinberg(unsigned char* input, unsigned char* output, char* error, un
 			{
 				error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x] += e * 5 / 16;
 
-				if (x > 0)
 				{
 					error[(((blockIdx.x*SIZE + y + 1)*blockDim.x)*SIZE) + (threadIdx.x*SIZE) + x - 1] += e * 3 / 16;
+
 				}
 			}
 
@@ -76,7 +76,7 @@ void FloydSteinbergST(unsigned char* input, unsigned char* output, char* error, 
 	const int white = 255;
 	int width = cols;
 	int heigth = rows;
-	int e = 0;
+
 
 
 	for (int y = 0; y < rows; y++)
@@ -137,7 +137,7 @@ void FloydSteinbergWrapper(const cv::Mat& in, cv::Mat& out)
 
 
 	//FloydSteinberg << <in.rows, in.cols >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
-	FloydSteinbergST << <blockSize, blockSize >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
+	FloydSteinberg << <blockSize, blockSize >> > (input_prt, output_ptr, error_ptr, in.rows, in.cols);
 
 	cudaDeviceSynchronize();
 	std::cout << "policzone";
